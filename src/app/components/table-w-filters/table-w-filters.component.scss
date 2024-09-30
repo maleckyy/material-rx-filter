@@ -1,0 +1,15 @@
+::ng-deep .mat-mdc-card{
+  max-width: 710px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+::ng-deep {
+  .mat-mdc-card-header {
+    justify-content: flex-end;
+  }
+}
+
+:host ::ng-deep .mdc-text-field--filled:not(.mdc-text-field--disabled) {
+  background-color: var(--mdc-outlined-card-container-color);
+}

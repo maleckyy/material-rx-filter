@@ -1,9 +1,12 @@
 import { Component } from '@angular/core';
-import {MatTableModule} from '@angular/material/table';
-import {MatInputModule} from '@angular/material/input';
-import {MatFormFieldModule} from '@angular/material/form-field';
-import {FormsModule} from '@angular/forms';
-
+import { MatTableModule } from '@angular/material/table';
+import { MatInputModule } from '@angular/material/input';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { FormsModule } from '@angular/forms';
+import { RxState } from '@rx-angular/state';
+import { AsyncPipe } from '@angular/common';
+import { debounceTime, map } from 'rxjs/operators';
+import { MatCardModule } from '@angular/material/card';
 export interface PeriodicElement {
   name: string;
   position: number;
@@ -27,12 +30,42 @@ const ELEMENT_DATA: PeriodicElement[] = [
 @Component({
   selector: 'app-table-w-filters',
   standalone: true,
-  imports: [MatTableModule, FormsModule, MatFormFieldModule, MatInputModule],
+  imports: [MatTableModule, FormsModule, MatFormFieldModule, MatInputModule, AsyncPipe, MatCardModule],
   templateUrl: './table-w-filters.component.html',
-  styleUrl: './table-w-filters.component.scss'
+  styleUrl: './table-w-filters.component.scss',
+  providers: [RxState],
 })
 
 export class TableWFiltersComponent {
   displayedColumns: string[] = ['position', 'name', 'weight', 'symbol'];
-  dataSource = ELEMENT_DATA;
+  readonly ELEMENT_DATA = ELEMENT_DATA;
+  delay_time = 2000;
+  state = new RxState<{ filter: string, filteredData: PeriodicElement[] }>();
+
+  constructor() {
+    this.state.set({ filter: '', filteredData: ELEMENT_DATA });
+
+    this.state.connect(
+      'filteredData',
+      this.state.select('filter').pipe(
+        debounceTime(this.delay_time),
+        map(filterValue => this.applyFilter(filterValue))
+      )
+    );
+  }
+
+  onFilterChange(filterValue: Event) {
+    const inputValue = (filterValue.target as HTMLInputElement).value;
+    this.state.set({ filter: inputValue });
+  }
+
+  private applyFilter(filterValue: string): PeriodicElement[] {
+    const filterValueLower = filterValue.toLowerCase();
+    return this.ELEMENT_DATA.filter(element =>
+      element.name.toLowerCase().includes(filterValueLower) ||
+      element.symbol.toLowerCase().includes(filterValueLower) ||
+      element.position.toString().includes(filterValueLower) ||
+      element.weight.toString().includes(filterValueLower)
+    );
+  }
 }
